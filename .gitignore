@@ -1,0 +1,88 @@
+# === STM32CubeIDE / Eclipse ===
+.metadata/
+*.launch
+*.settings/
+*.cproject
+*.project
+
+# === STM32CubeMX ===
+*.ioc
+*.mxproject
+*.log
+*.db
+
+# === Keil MDK-ARM / uVision ===
+*.uvoptx
+*.uvprojx
+*.uvopt
+*.uvproj
+*.uvguix.*
+*.scvd
+*.sct
+*.plg
+
+# Keil build artifacts
+*.axf
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.obj
+*.crf
+*.lnp
+*.d
+*.lst
+*.iex
+*.dep
+*.tra
+*.log
+
+# Debug folders
+Debug/
+Release/
+Build/
+
+# === CMSIS and HAL auto-generated ===
+Drivers/
+Core/Startup/
+RTE/
+RTE_Components.h
+
+# === User-app specific artifacts ===
+user_app/MDK-ARM/*.htm
+user_app/MDK-ARM/*.log
+user_app/MDK-ARM/*.d
+user_app/MDK-ARM/*.axf
+user_app/MDK-ARM/*.elf
+user_app/MDK-ARM/*.dbx
+user_app/MDK-ARM/*.uvoptx
+user_app/MDK-ARM/*.uvprojx
+user_app/MDK-ARM/*.scvd
+user_app/MDK-ARM/*.map
+user_app/MDK-ARM/*.o
+
+# === VSCode (if used) ===
+.vscode/
+
+# === System/Editor files ===
+*.swp
+*~
+*.tmp
+*.bak
+*.old
+*.orig
+.DS_Store
+Thumbs.db
+
+# === Windows executables and installers ===
+*.exe
+*.bat
+*.cmd
+SetupSTM32CubeMX-*.exe
+BootLoaderProject/MDK-ARM/BootLoaderProject/BootLoaderProject.build_log.htm
+BootLoaderProject/MDK-ARM/BootLoaderProject/BootLoaderProject.htm
+BootLoaderProject/MDK-ARM/DebugConfig/BootLoaderProject_STM32F446RETx.dbgconf
+user_app/MDK-ARM/DebugConfig/user_app_STM32F446RETx.dbgconf
+user_app/MDK-ARM/user_app/user_app.build_log.htm
+user_app/MDK-ARM/user_app/user_app.htm
