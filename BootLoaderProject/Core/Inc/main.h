@@ -103,6 +103,21 @@ void Error_Handler(void);
 
 #define FLASH_OPB_RDP_LEVEL   ((uint8_t *)0x1FFFC000)
 
+#define VALID 		0X00
+#define INVALID 	0X01
+
+
+#define FLASH_SIZE			512*1024
+#define SRAM1_SIZE			112*1024
+#define SRAM2_SIZE			16*1024
+#define BKPSRAM_SIZE			4*1024
+
+#define FLASH_END1      (FLASH_BASE+FLASH_SIZE)
+#define SRAM1_END				(SRAM1_BASE+SRAM1_SIZE)
+#define SRAM2_END				(SRAM2_BASE+SRAM2_SIZE)
+#define BKPSRAM_END			(BKPSRAM_BASE+BKPSRAM_SIZE)
+
+
 void bootloader_send_ack(uint8_t command_code,uint8_t length_of_follow_data);
 void bootloader_send_nack(void);
 uint8_t bootloader_verify_crc(uint8_t *pbuffer, uint8_t len_for_calc, uint32_t host_crc);
@@ -110,6 +125,7 @@ uint8_t bootloader_get_version(void);
 void bootloader_uart_write_data(uint8_t *pdata,uint16_t size_of_data);
 uint16_t bootloader_get_mcu_cid(void);
 uint8_t bootloader_retrieve_rdp_level(void);
+uint8_t verify_address(uint32_t goaddr);
 
 
 

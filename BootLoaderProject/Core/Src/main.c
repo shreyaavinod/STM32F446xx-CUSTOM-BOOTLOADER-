@@ -470,11 +470,48 @@ void  bootloader_read_uart(void){
 		}
 			
 	}
-	void				bootloader_handle_gotoaddr_cmd(uint8_t*pBuffer)
+	void				bootloader_handle_gotoaddr_cmd(uint8_t*BL_RX_Buffer)
 		{
+			printf1("BL DEBUG MESSAGE: bootloader_handle_gotoaddr_cmd executing...\r\n"); //================CHIP IDENTIFICATION NUMBER====================
+		
+		//verify CRC
+		uint8_t command_pack_length=BL_RX_Buffer[0]+1; //LENGTH OF FOLLOW BYTES +LENGTH OF 1ST BYTE
+		uint32_t host_crc= *((uint32_t*)(BL_RX_Buffer+(command_pack_length-4)));
+		
+		if(!(bootloader_verify_crc(BL_RX_Buffer,command_pack_length -4,host_crc)))
+		{
+		printf1("BL DEBUG MESSAGE: CRC Verification success!\r\n");
+		bootloader_send_ack(BL_RX_Buffer[1],1);//send the ack 
+		//======================extract go to address=============================
+		uint32_t go_addr = *((uint32_t *)&BL_RX_Buffer[2]);
+		//======================VRIFY IF THE go_addr IS VALID=====================
+		if (verify_address(go_addr)==VALID)
+		{
+			uint8_t addr_valid =VALID;
+			bootloader_uart_write_data(&addr_valid,1);
+			go_addr|=0x01; //THUMB BIT SET
+			//JUMP TO ADDRESS BY ASSIGNING TO A FUNCTION PTR AND CALLING THAT FUNCTION 
+			//FUNC PTR 
+			void (* func)(void);
+			func= ((void (*)(void))go_addr);
+			func();		
+		}	
+		else 
+		{
+			uint8_t addr_invalid =INVALID;
+			bootloader_uart_write_data(&addr_invalid,1);
+		}
+		}
+		
+		else 
+		{
+		printf1("BL DEBUG MESSAGE: CRC Verification failed!\r\n");
+		bootloader_send_nack();
+		}
 	}
 	void				bootloader_handle_flasherase_cmd(uint8_t*pBuffer)
 		{
+			
 	}
 	void				bootloader_handle_memwrite_cmd(uint8_t*pBuffer)
 		{
@@ -553,6 +590,26 @@ void  bootloader_read_uart(void){
 		return rdp_level;
 		
 		
+	}
+	//=====================================================VERIFY MEMORY ADDRESS=====================================================================================
+	uint8_t verify_address(uint32_t goaddr)
+	{
+		if (goaddr>=FLASH_BASE && goaddr<=FLASH_END1)
+			return VALID;
+		else 
+			return INVALID;
+		if (goaddr>=SRAM1_BASE && goaddr<=SRAM1_END)
+			return VALID;
+		else 
+			return INVALID;
+		if (goaddr>=SRAM2_BASE && goaddr<=SRAM2_END)
+			return VALID;
+		else 
+			return INVALID;
+		if (goaddr>=BKPSRAM_BASE && goaddr<=BKPSRAM_END)
+			return VALID;
+		else 
+			return INVALID;
 	}
 	//=====================================================implementation of printf1() function using va_args=====================================================================
 void printf1(char * format_string,...)
