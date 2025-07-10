@@ -50,7 +50,7 @@ STM32-Bootloader-Project/
 │   └── ...
 └── README.md
 
-
+```
 ---
 
 ## 🔧 How It Works
