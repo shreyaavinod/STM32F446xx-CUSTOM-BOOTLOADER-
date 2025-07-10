@@ -1,86 +1,95 @@
-# 🔧 STM32 Custom UART Bootloader
+# 🚀 STM32 Custom UART Bootloader
 
-This (ongoing) project implements a **custom bootloader** for STM32 microcontrollers (tested on STM32F446RE) that allows firmware upgrades over UART. The bootloader communicates with a host system (e.g., a PC) via USART2, enabling operations like reading chip ID, erasing flash, writing to memory, reading protection levels, and jumping to the main application.
-
----
-
-## 🚀 Features
-
-- ✅ UART-based command interface (USART2)
-- ✅ Host command packet with CRC32 verification
-- ✅ Button-based mode selection (Bootloader / User App)
-- ✅ Jumps to application stored in Flash Sector 2
-- ✅ Debug prints via USART3 (`printf1()`)
-- ✅ Commands supported:
-  - `0x51`: Get bootloader version
-  - `0x52`: Get list of supported commands
-  - `0x53`: Get MCU chip ID
-  - `0x54`: Get RDP (Read Protection) level
-  - `0x55`: Jump to user application
-  - `0x56`: Flash erase
-  - `0x57`: Memory write
-  - `0x58`: Enable R/W protection
-  - `0x59`: Memory read
-  - `0x5A`: Read sector protection status
-  - `0x5B`: OTP read
-  - `0x5C`: Disable R/W protection
+This project is a fully functional **custom UART bootloader** for the **STM32F4 series (tested on STM32F446RE)**. It allows secure, firmware-level control over memory operations such as flash erase, memory write, read/write protection, and user application jumps — all through UART.
 
 ---
 
-## 📁 Project Structure
-stm32-bootloader/
-├── Core/
-│ ├── Src/
-│ │ └── main.c # Bootloader core logic
-│ └── Inc/
-│ └── main.h
-├── Drivers/ # HAL Drivers
-├── bootloader_commands.c/.h # (recommended for modular handlers)
-├── README.md
+## 📋 Features
+
+- ✅ **Bootloader Entry via Button Press** (GPIOC Pin 13)
+- ✅ **UART Command Protocol** (via USART2)
+- ✅ **Flash Erase** (sector or mass erase)
+- ✅ **Flash Programming** (byte-wise via HAL_FLASH_Program)
+- ✅ **CRC Verification** of command packets
+- ✅ **Read/Write Protection** using Option Bytes
+- ✅ **Jump to User Application** in Sector 2
+- ✅ **Command Debug Output** via USART3 (`printf1()`)
+- ✅ **Provide a user application that: Initializes peripherals and Confirms successful execution after bootloader handoff
+
+---
+
+## 📦 Supported Bootloader Commands
+
+| Command Code | Command Name             | Description                          |
+|--------------|--------------------------|--------------------------------------|
+| `0x51`       | `BL_GET_VER`             | Get bootloader version               |
+| `0x52`       | `BL_GET_HELP`            | Get supported command list           |
+| `0x53`       | `BL_GET_CID`             | Get MCU Chip ID                      |
+| `0x54`       | `BL_GET_RDP_STATUS`      | Get current Read Protection Level    |
+| `0x55`       | `BL_GO_TO_ADDR`          | Jump to specified address            |
+| `0x56`       | `BL_FLASH_ERASE`         | Erase flash memory sectors           |
+| `0x57`       | `BL_MEM_WRITE`           | Program flash with new firmware      |
+| `0x58`       | `BL_EN_R_W_PROTECT`      | Enable Read/Write or Write protection|
+| `0x59`       | `BL_MEM_READ`            | (To Be Implemented)                  |
+| `0x5A`       | `BL_READ_SECTOR_STATUS`  | Check sector protection bits         |
+| `0x5B`       | `BL_OTP_READ`            | (To Be Implemented)                  |
+| `0x5C`       | `BL_DIS_R_W_PROTECT`     | Disable all sector protections       |
+
+---
+
+## 📂 Project Structure
+
+```bash
+STM32-Bootloader-Project/
+├── Bootloader/
+│   ├── Core/Src/main.c
+│   ├── bootloader.c/.h
+│   └── ...
+├── User_Application/
+│   ├── Core/Src/main.c
+│   └── ...
+└── README.md
 
 
 ---
 
-## ⚙️ How It Works
+## 🔧 How It Works
 
-- On power-up, the bootloader checks the **state of a GPIO pin** (PC13).
-  - If **pressed**, enters **bootloader mode** and listens for commands via UART.
-  - If **not pressed**, jumps to the **user application** at Flash Sector 2.
-- Incoming command packets are verified using **CRC32**.
-- Responds with **ACK** (0xA5) and optional data or **NACK** (0x7F).
+1. **Boot Decision:**
+   - If `GPIOC Pin 13` is **pressed** → Bootloader mode
+   - Else → Jump to user app in Sector 2
 
----
+2. **UART Protocol:**
+   - First byte: Total length (excluding length byte)
+   - Next bytes: Command + arguments
+   - Last 4 bytes: CRC32 checksum
 
-## 📦 Host Command Format
+3. **Sector & Flash Config:**
+   - Flash Write & Erase via `HAL_FLASH_Unlock()` + `HAL_FLASH_Program`
+   - Option Byte settings via `OPTCR_BYTEx_ADDRESS`
 
-Each packet from the host follows this structure:
-
-| Byte | Description                    |
-|------|--------------------------------|
-| 0    | Length of remaining bytes (N)  |
-| 1    | Command code                   |
-| 2... | Parameters (optional)          |
-| N-3 to N | 4-byte CRC32 (little endian) |
-
-> ⚠️ The CRC is computed over all bytes except the CRC itself.
+4. **Function Jump:**
+   - MSP and reset handler of user app are extracted from address `0x08008000` (sector 2 base)
 
 ---
 
-## 🛠️ Requirements
+## 💻 UART Interface
 
-- STM32F4xx MCU (e.g., STM32F446RE)
-- STM32CubeIDE
-- USB to UART module
-- UART terminal or Python host tool
+- **USART2 (PA2 - TX, PA3 - RX)**: Bootloader command interface
+- **USART3 (PB10 - TX)**: Debug messages via `printf1()`
 
 ---
 
-## 🧰 Debugging
+## 🛠️ Flash Write Format (Example)
 
-- All debug messages (e.g., CRC verification, command execution) are sent over **USART3** using a custom `printf1()` function.
+**Command:** `BL_MEM_WRITE`  
+**Payload Format:**
+
+## 🚦 To-Do / Future Improvements
+
+- [ ] Implement `BL_MEM_READ` & `BL_OTP_READ`
+- [ ] Timeout auto-jump to user app
+- [ ] LED indication for status
+- [ ] Add Python CLI bootloader flasher
 
 ---
-
-
-
-
