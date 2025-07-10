@@ -118,6 +118,8 @@ void Error_Handler(void);
 #define BKPSRAM_END			(BKPSRAM_BASE+BKPSRAM_SIZE)
 
 
+#define INVALID_SECTOR   0x04
+
 void bootloader_send_ack(uint8_t command_code,uint8_t length_of_follow_data);
 void bootloader_send_nack(void);
 uint8_t bootloader_verify_crc(uint8_t *pbuffer, uint8_t len_for_calc, uint32_t host_crc);
@@ -126,7 +128,9 @@ void bootloader_uart_write_data(uint8_t *pdata,uint16_t size_of_data);
 uint16_t bootloader_get_mcu_cid(void);
 uint8_t bootloader_retrieve_rdp_level(void);
 uint8_t verify_address(uint32_t goaddr);
-
+uint8_t bootloader_erase_flash(uint8_t sector_num, uint8_t num_of_sectors);
+uint8_t	bootloader_memwrite(uint8_t *pbuffer,uint32_t memaddr,uint8_t payload_len);
+uint8_t bootloader_enable_protection(uint8_t sector_details,uint8_t protection_mode,uint8_t disable);
 
 
 

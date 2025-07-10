@@ -509,28 +509,144 @@ void  bootloader_read_uart(void){
 		bootloader_send_nack();
 		}
 	}
-	void				bootloader_handle_flasherase_cmd(uint8_t*pBuffer)
+	void	bootloader_handle_flasherase_cmd(uint8_t*BL_RX_Buffer)
 		{
+			uint8_t erase_status=0X00;
+			printf1("BL DEBUG MESSAGE: bootloader_handle_flasherase_cmd executing...\r\n"); //================CHIP IDENTIFICATION NUMBER====================
+		
+		//verify CRC
+		uint8_t command_pack_length=BL_RX_Buffer[0]+1; //LENGTH OF FOLLOW BYTES +LENGTH OF 1ST BYTE
+		uint32_t host_crc= *((uint32_t*)(BL_RX_Buffer+(command_pack_length-4)));
+		
+		if(!(bootloader_verify_crc(BL_RX_Buffer,command_pack_length -4,host_crc)))
+		{
+		printf1("BL DEBUG MESSAGE: CRC Verification success!\r\n");
+		bootloader_send_ack(BL_RX_Buffer[1],2);//send the ack 
+			
+		//======================flash erase=============================
+		
+		
+		erase_status = bootloader_erase_flash(BL_RX_Buffer[2],BL_RX_Buffer[3]);
+			
+		
+			
+		bootloader_uart_write_data(&erase_status,1);
+		}	
+
+		else 
+		{
+		printf1("BL DEBUG MESSAGE: CRC Verification failed!\r\n");
+		bootloader_send_nack();
+		}
+			
 			
 	}
-	void				bootloader_handle_memwrite_cmd(uint8_t*pBuffer)
+	void				bootloader_handle_memwrite_cmd(uint8_t*BL_RX_Buffer)
 		{
+			printf1("BL DEBUG MESSAGE: bootloader_handle_memwrite_cmd executing...\r\n"); //================CHIP IDENTIFICATION NUMBER====================
+		
+		//verify CRC
+		uint8_t command_pack_length=BL_RX_Buffer[0]+1; //LENGTH OF FOLLOW BYTES +LENGTH OF 1ST BYTE
+		uint32_t host_crc= *((uint32_t*)(BL_RX_Buffer+(command_pack_length-4)));
+		
+		if(!(bootloader_verify_crc(BL_RX_Buffer,command_pack_length -4,host_crc)))
+		{
+		printf1("BL DEBUG MESSAGE: CRC Verification success!\r\n");
+		bootloader_send_ack(BL_RX_Buffer[1],1);//send the ack 
+		//======================extract go to address=============================
+		
+		uint32_t mem_addr = *((uint32_t *)&BL_RX_Buffer[2]);
+		//======================VRIFY IF THE go_addr IS VALID=====================
+		if (verify_address(mem_addr)==VALID)
+		{
+		
+			//ADDRESS VALID HAVE TO WRITE TO THE ADDRESS 
+			uint8_t write_status=bootloader_memwrite(&BL_RX_Buffer[7],mem_addr,BL_RX_Buffer[6]);
+			bootloader_uart_write_data(&write_status,1);
+				
+		}	
+		else 
+		{
+			uint8_t addr_invalid =INVALID;
+			bootloader_uart_write_data(&addr_invalid,1);
+		}
+		}
+		
+		else 
+		{
+		printf1("BL DEBUG MESSAGE: CRC Verification failed!\r\n");
+		bootloader_send_nack();
+		}
+			
 	}
 	void				bootloader_handle_enrwprotect_cmd(uint8_t*pBuffer)
 		{
+			//1. CHECK CRC THEN READ OOPTCR REGISTER 
+			uint32_t crc_val=0xFFFFFFFF;
+			uint8_t command_pack_length=BL_RX_Buffer[0]+1;
+			uint32_t host_crc=*((uint32_t *)(BL_RX_Buffer+command_pack_length-4));
+			if(!bootloader_verify_crc(BL_RX_Buffer,command_pack_length-4,host_crc))
+			{
+				bootloader_send_ack(BL_RX_Buffer[1],2);
+				//enable r/w or write protection 
+				uint8_t status= bootloader_enable_protection(BL_RX_Buffer[2],BL_RX_Buffer[3],0);
+				
+				bootloader_uart_write_data(&status,1);
+			}
+			else
+			{
+				bootloader_send_nack();
+			}
+			
+			
 	}
 	void				bootloader_handle_memread_cmd(uint8_t*pBuffer)
 		{
+			
 	}
-	void				bootloader_handle_readsectorstatus_cmd(uint8_t*pBuffer)
+	void				bootloader_handle_readsectorstatus_cmd(uint8_t*BL_RX_Buffer)
 		{
+			//1. CHECK CRC THEN READ OOPTCR REGISTER 
+			uint32_t crc_val=0xFFFFFFFF;
+			uint8_t command_pack_length=BL_RX_Buffer[0]+1;
+			uint32_t host_crc=*((uint32_t *)(BL_RX_Buffer+command_pack_length-4));
+			if(!bootloader_verify_crc(BL_RX_Buffer,command_pack_length-4,host_crc))
+			{
+				bootloader_send_ack(BL_RX_Buffer[1],2);
+				//read the optcr
+				uint16_t optcr_cont= ((*((volatile uint8_t *)(OPTCR_BYTE3_ADDRESS)) << 8 ) |*((volatile uint8_t *)(OPTCR_BYTE2_ADDRESS)));
+				bootloader_uart_write_data((uint8_t *)&optcr_cont,2);
+
+			}
+			else
+			{
+				bootloader_send_nack();
+			}
+			
 	}
 	void				bootloader_handle_otpread_cmd(uint8_t*pBuffer)
 		{
 	}
 	void				bootloader_handle_disrwprotect_cmd(uint8_t*pBuffer)
 		{
+			//1. CHECK CRC THEN READ OOPTCR REGISTER 
+			uint32_t crc_val=0xFFFFFFFF;
+			uint8_t command_pack_length=BL_RX_Buffer[0]+1;
+			uint32_t host_crc=*((uint32_t *)(BL_RX_Buffer+command_pack_length-4));
+			if(!bootloader_verify_crc(BL_RX_Buffer,command_pack_length-4,host_crc))
+			{
+				bootloader_send_ack(BL_RX_Buffer[1],2);
+				//enable r/w or write protection 
+				uint8_t status= bootloader_enable_protection(0,0,1);
+				
+				bootloader_uart_write_data(&status,1);
+			}
+			else
+			{
+				bootloader_send_nack();
+			}
 	}
+		
 //=============================bootloader_send_nack() and bootloader_send_ack()=====
 
 	
@@ -611,6 +727,67 @@ void  bootloader_read_uart(void){
 		else 
 			return INVALID;
 	}
+	//=======================================FLASH ERASE ===================================================================
+uint8_t bootloader_erase_flash(uint8_t sector_number, uint8_t number_of_sector)
+{
+    //we have totally 8 sectors in STM32F446RE mcu .. sector[0 to 7]
+	//number_of_sector has to be in the range of 0 to 7
+	// if sector_number = 0xff , that means mass erase !
+	//Code needs to modified if your MCU supports more flash sectors
+	FLASH_EraseInitTypeDef flashErase_handle;
+	uint32_t sectorError;
+	HAL_StatusTypeDef status;
+
+
+	if( number_of_sector > 8 )
+		return INVALID_SECTOR;
+
+	if( (sector_number == 0xff ) || (sector_number <= 7) )
+	{
+		if(sector_number == (uint8_t) 0xff)
+		{
+			flashErase_handle.TypeErase = FLASH_TYPEERASE_MASSERASE;
+		}else
+		{
+		    /*Here we are just calculating how many sectors needs to erased */
+			uint8_t remanining_sector = 8 - sector_number;
+            if( number_of_sector > remanining_sector)
+            {
+            	number_of_sector = remanining_sector;
+            }
+			flashErase_handle.TypeErase = FLASH_TYPEERASE_SECTORS;
+			flashErase_handle.Sector = sector_number; // this is the initial sector
+			flashErase_handle.NbSectors = number_of_sector;
+		}
+		flashErase_handle.Banks = FLASH_BANK_1;
+
+		/*Get access to touch the flash registers */
+		HAL_FLASH_Unlock();
+		flashErase_handle.VoltageRange = FLASH_VOLTAGE_RANGE_3;  // our mcu will work on this voltage range
+		status = (uint8_t) HAL_FLASHEx_Erase(&flashErase_handle, &sectorError);
+		HAL_FLASH_Lock();
+
+		return status;
+	}
+
+
+	return INVALID_SECTOR;
+}
+
+//	//==================================PROGRAM FLASH ==========================================================================
+uint8_t	bootloader_memwrite(uint8_t *pbuffer,uint32_t memaddr,uint8_t payload_len)
+{
+	//1. CURRENTLY WORKS FOR FLASH ASSUMING MEM ADDRESS IS WITHIN FLASH RANGE 
+	uint8_t status;
+	HAL_FLASH_Unlock();
+	for (int i=0;i<payload_len;i++)
+	{
+	status = (uint8_t)HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE,memaddr,(uint64_t)pbuffer[i]);
+	memaddr++;
+  }
+	HAL_FLASH_Lock();
+	return status;
+}
 	//=====================================================implementation of printf1() function using va_args=====================================================================
 void printf1(char * format_string,...)
 {
@@ -626,6 +803,87 @@ void printf1(char * format_string,...)
 	va_end(args);
 	#endif
 	
+}
+//=======================ENABLE PROTECTION=================================
+uint8_t bootloader_enable_protection(uint8_t sector_details,uint8_t protection_mode,uint8_t disable)
+{
+	if (disable)
+	{
+		//unloack flash programming 
+		HAL_FLASH_OB_Unlock();
+		
+		//program the optcr byte 3 register 
+		
+		while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)!=RESET);
+		
+		
+		*((uint8_t *)(OPTCR_BYTE3_ADDRESS))&= ~(1<<7);
+		
+		
+		*((uint8_t *)(OPTCR_BYTE2_ADDRESS))|= (0xFF);
+			
+		*((uint8_t *)(OPTCR_BYTE0_ADDRESS))|=(1<<1);
+			
+		
+		
+		while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)!=RESET);
+		
+		HAL_FLASH_OB_Lock();
+		return 0;
+		
+	}
+	else
+	{		
+	if(protection_mode==1) //=================WRITE PROTECTION ONLY===================
+	{
+		//unloack flash programming 
+		HAL_FLASH_OB_Unlock();
+		
+		//program the optcr byte 3 register 
+		
+		while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)!=RESET);
+		
+		
+		*((uint8_t *)(OPTCR_BYTE3_ADDRESS))&= ~(1<<7);
+		
+		
+		*((uint8_t *)(OPTCR_BYTE2_ADDRESS))&=~(sector_details);
+			
+		*((uint8_t *)(OPTCR_BYTE0_ADDRESS))|=(1<<1);
+			
+		
+		
+		while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)!=RESET);
+		
+		HAL_FLASH_OB_Lock();
+		
+	}
+	else if(protection_mode==2) //=================R/W PROTECTION ONLY===================
+	{
+		//unlock flash programming 
+		HAL_FLASH_OB_Unlock();
+		
+		//program the optcr byte 3 register 
+		
+		while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)!=RESET);
+		
+		
+		*((uint8_t *)(OPTCR_BYTE3_ADDRESS))|= (1<<7);
+		
+		
+		*((uint8_t *)(OPTCR_BYTE2_ADDRESS))|=sector_details;
+			
+		*((uint8_t *)(OPTCR_BYTE0_ADDRESS))|=(1<<1);
+			
+		
+		
+		while(__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY)!=RESET);
+		
+		HAL_FLASH_OB_Lock();
+		
+	}
+	return 0;
+}
 }
 
 
