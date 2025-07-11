@@ -3,7 +3,7 @@
 This project is a fully functional **custom UART bootloader** for the **STM32F4 series (tested on STM32F446RE)**. It allows secure, firmware-level control over memory operations such as flash erase, memory write, read/write protection, and user application jumps — all through UART.
 
 ---
-![Bootloader Demo](./HostAppEx.png)
+
 ## 📋 Features
 
 - ✅ **Bootloader Entry via Button Press** (GPIOC Pin 13)
